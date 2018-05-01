@@ -18,48 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import {Node} from './core/node.js';
-import {Renderer, createWebGLContext} from './core/renderer.js';
-import {UrlTexture} from './core/texture.js';
+export {Node} from './core/node.js';
+export {Renderer, createWebGLContext} from './core/renderer.js';
+export {UrlTexture} from './core/texture.js';
 
-import {PrimitiveStream} from './geometry/primitive-stream.js';
-import {BoxBuilder} from './geometry/box-builder.js';
+export {PrimitiveStream} from './geometry/primitive-stream.js';
+export {BoxBuilder} from './geometry/box-builder.js';
 
-import {PbrMaterial} from './materials/pbr.js';
+export {PbrMaterial} from './materials/pbr.js';
 
-import {ButtonNode} from './nodes/button.js';
-import {CubeSeaNode} from './nodes/cube-sea.js';
-import {Gltf2Node} from './nodes/gltf2.js';
-import {SkyboxNode} from './nodes/skybox.js';
-import {VideoNode} from './nodes/video.js';
+export {mat4, mat3, vec3, quat} from './math/gl-matrix.js';
 
-import {WebXRView, Scene} from './scenes/scene.js';
+export {BoundsRenderer} from './nodes/bounds-renderer.js';
+export {ButtonNode} from './nodes/button.js';
+export {CubeSeaNode} from './nodes/cube-sea.js';
+export {Gltf2Node} from './nodes/gltf2.js';
+export {SkyboxNode} from './nodes/skybox.js';
+export {VideoNode} from './nodes/video.js';
 
-// A very short-term polyfill to address a change in the location of the
-// getViewport call. This should dissapear within a month or so.
-if (('XRWebGLLayer' in window) && !('getViewport' in XRWebGLLayer.prototype)) {
-  XRWebGLLayer.prototype.getViewport = function(view) {
-    return view.getViewport(this);
-  };
-}
+export {WebXRView, Scene} from './scenes/scene.js';
 
-export {
-  Node,
-  Renderer,
-  createWebGLContext,
-  UrlTexture,
-
-  PrimitiveStream,
-  BoxBuilder,
-
-  PbrMaterial,
-
-  ButtonNode,
-  CubeSeaNode,
-  Gltf2Node,
-  SkyboxNode,
-  VideoNode,
-
-  WebXRView,
-  Scene,
-};
+export {FallbackHelper} from './util/fallback-helper.js';

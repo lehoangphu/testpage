@@ -19,10 +19,10 @@
 // SOFTWARE.
 
 import {RenderView} from '../core/renderer.js';
-import {BoundsRenderer} from '../nodes/bounds-renderer.js';
 import {InputRenderer} from '../nodes/input-renderer.js';
 import {StatsViewer} from '../nodes/stats-viewer.js';
 import {Node} from '../core/node.js';
+import {vec3, quat} from '../math/gl-matrix.js';
 
 export class WebXRView extends RenderView {
   constructor(view, pose, layer) {
@@ -45,8 +45,6 @@ export class Scene extends Node {
     this._stats = null;
     this._statsEnabled = false;
     this.enableStats(true); // Ensure the stats are added correctly by default.
-    this._stageBounds = null;
-    this._boundsRenderer = null;
 
     this._inputRenderer = null;
     this._resetInputEndFrame = true;
@@ -55,12 +53,11 @@ export class Scene extends Node {
 
     this._hoverFrame = 0;
     this._hoveredNodes = [];
+
+    this.clear = true;
   }
 
   setRenderer(renderer) {
-    // Set up a non-black clear color so that we can see if something renders
-    // wrong.
-    renderer.gl.clearColor(0.1, 0.2, 0.3, 1.0);
     this._setRenderer(renderer);
   }
 
@@ -212,17 +209,6 @@ export class Scene extends Node {
     }
   }
 
-  setBounds(stageBounds) {
-    this._stageBounds = stageBounds;
-    if (stageBounds && !this._boundsRenderer) {
-      this._boundsRenderer = new BoundsRenderer();
-      this.addNode(this._boundsRenderer);
-    }
-    if (this._boundsRenderer) {
-      this._boundsRenderer.stageBounds = stageBounds;
-    }
-  }
-
   draw(projectionMatrix, viewMatrix, eye) {
     let view = new RenderView();
     view.projectionMatrix = projectionMatrix;
@@ -250,7 +236,10 @@ export class Scene extends Node {
     }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, layer.framebuffer);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    if (this.clear) {
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    }
 
     let views = [];
     for (let view of xrFrame.views) {

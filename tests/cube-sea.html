@@ -30,7 +30,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     <link href='../css/common.css' rel='stylesheet'></link>
 
-    <script src='../js/third-party/gl-matrix-min.js'></script>
     <script src='../js/third-party/dat.gui.min.js'></script>
     <script src='../js/third-party/wglu-url.js'></script>
     <script src='../js/cottontail/build/cottontail.js'></script>
@@ -146,6 +145,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         // Viewport scale
         viewportScale: getFloatParam('viewportScale', 1),
 
+        // Prevents the app from clearing the background, which is useful for
+        // AR testing.
+        noClear: getBoolParam('noClear', false),
+
         // Don't produce frames at all. Simulates a broken app.
         noFrames: getBoolParam('noFrames', false),
 
@@ -188,6 +191,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           getParamSaver('viewportScale'));
       folderRender.add(appSettings, 'antialias').onFinishChange(
           getParamSaver('antialias'));
+      folderRender.add(appSettings, 'noClear').onFinishChange(
+          getParamSaver('noClear'));
       folderRender.open();
 
       var folderTest = gui.addFolder('Regression testing');
@@ -237,10 +242,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
         if (navigator.xr) {
           navigator.xr.requestDevice().then((device) => {
-            xrButton.setDevice(device);
-
-            if (!device)
-              return;
+            device.supportsSession({exclusive: true}).then(() => {
+              xrButton.setDevice(device);
+            });
 
             let outputCanvas = document.createElement('canvas');
             let ctx = outputCanvas.getContext('xrpresent');
@@ -250,8 +254,34 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                   document.body.appendChild(outputCanvas);
                   onSessionStarted(session);
                 });
+          }).catch(() => {
+            initFallback();
           });
+        } else {
+          initFallback();
         }
+      }
+
+      function initFallback() {
+        initGL();
+        document.body.appendChild(gl.canvas);
+        let fallbackHelper = new FallbackHelper(scene, gl);
+      }
+
+      function initGL(compatibleDevice) {
+        if (gl)
+          return;
+
+        gl = createWebGLContext({
+          compatibleXRDevice: compatibleDevice
+        });
+
+        // Set up a non-black clear color so that we can see if something renders wrong.
+        gl.clearColor(0.1, 0.2, 0.3, 1.0);
+
+        renderer = new Renderer(gl);
+        scene.setRenderer(renderer);
+        scene.inputRenderer.setControllerMesh(new Gltf2Node({url: '../media/gltf/controller/controller.gltf'}));
       }
 
       function onRequestSession(device) {
@@ -270,16 +300,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       function onSessionStarted(session) {
         session.addEventListener('end', onSessionEnded);
 
-        if (!gl) {
-          gl = createWebGLContext({
-            compatibleXRDevice: session.device
-          });
-
-          renderer = new Renderer(gl);
-
-          scene.setRenderer(renderer);
-          scene.inputRenderer.setControllerMesh(new Gltf2Node({url: '../media/gltf/controller/controller.gltf'}));
-        }
+        initGL(session.device);
 
         session.baseLayer = new XRWebGLLayer(session, gl, {
           framebufferScaleFactor: appSettings.framebufferScale,
@@ -346,6 +367,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         if (appSettings.submitInterval && frameNum % appSettings.submitInterval > 0) {
           return;
         }
+
+        scene.clear = !appSettings.noClear;
 
         scene.updateInputSources(frame, frameOfRef);
 
