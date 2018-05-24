@@ -49,10 +49,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     <main style='text-align: center;'>
       <p>Click 'Enter XR' to see content</p> 
     </main>
+    <canvas id="webgl-canvas"></canvas>
     <script>
       // XR globals.
       let xrButton = null;
       let xrFrameOfRef = null;
+
+      var webglCanvas = document.getElementById("webgl-canvas");
+      webglCanvas.width = 1751 * 2;
+      webglCanvas.height = 1751;
 
       // WebGL scene globals.
       let gl = null;
@@ -83,6 +88,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             });
           });
         }
+
+        
       }
 
       // Called when the user selects a device to present to. In response we
@@ -98,15 +105,27 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         // that it should display 'Exit XR' instead.
         xrButton.setSession(session);
 
+        
+        session.depthNear = 0.1;
+        session.depthFar = 1000;
+
         // Listen for the sessions 'end' event so we can respond if the user
         // or UA ends the session for any reason.
         session.addEventListener('end', onSessionEnded);
 
         // Create a WebGL context to render with, initialized to be compatible
         // with the XRDisplay we're presenting to.
-        gl = createWebGLContext({
-          compatibleXRDevice: session.device
-        });
+
+        var glAttribs = {
+          alpha: false,
+        };
+        var contextTypes = ["webgl", "experimental-webgl"];
+
+        for (var i in contextTypes) {
+          gl = webglCanvas.getContext(contextTypes[i], glAttribs);
+          if (gl)
+            break;
+        }
 
         // Create a renderer with that GL context (this is just for the samples
         // framework and has nothing to do with WebXR specifically.)
