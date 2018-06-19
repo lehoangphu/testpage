@@ -76,17 +76,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
               xrButton.setDevice(device);
             });
 
-            // Note: If you don't want dragging on the canvas to do things like
-            // scroll or pull-to-refresh, you'll want to set touch-action: none;
-            // on the canvas' CSS style, which this page does in common.css
-            let outputCanvas = document.createElement('canvas');
-            let ctx = outputCanvas.getContext('xrpresent');
-
-            device.requestSession({exclusive: true})
-                .then((session) => {
-                  document.body.appendChild(outputCanvas);
-                  onSessionStarted(session);
-                });
+            
           }).catch(() => {
             initFallback();
           });
@@ -125,7 +115,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         mirrorCanvas.setAttribute('id', 'mirror-canvas');
         document.body.appendChild(mirrorCanvas);
 
-        device.requestSession({ exclusive: true, outputContext: ctx }).then((session) => {
+        device.requestSession({ exclusive: true }).then((session) => {
           xrButton.setSession(session);
           onSessionStarted(session);
         });

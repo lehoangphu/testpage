@@ -75,15 +75,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             device.supportsSession({exclusive: true}).then(() => {
               xrButton.setDevice(device);
             });
-
-            let outputCanvas = document.createElement('canvas');
-            let ctx = outputCanvas.getContext('xrpresent');
-
-            device.requestSession({exclusive: true})
-                .then((session) => {
-                  document.body.appendChild(outputCanvas);
-                  onSessionStarted(session);
-                });
           }).catch(() => {
             initFallback();
           });
@@ -106,7 +97,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         mirrorCanvas.setAttribute('id', 'mirror-canvas');
         document.body.appendChild(mirrorCanvas);
 
-        device.requestSession({ exclusive: true, outputContext: ctx }).then((session) => {
+        device.requestSession({ exclusive: true }).then((session) => {
           xrButton.setSession(session);
           onSessionStarted(session);
         });
