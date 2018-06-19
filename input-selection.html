@@ -79,7 +79,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             let outputCanvas = document.createElement('canvas');
             let ctx = outputCanvas.getContext('xrpresent');
 
-            device.requestSession({ outputContext: ctx })
+            device.requestSession({exclusive: true})
                 .then((session) => {
                   document.body.appendChild(outputCanvas);
                   onSessionStarted(session);
