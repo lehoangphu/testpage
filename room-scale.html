@@ -136,8 +136,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           if (session.exclusive) {
             xrExclusiveFrameOfRef = frameOfRef;
             let boundsRenderer = new BoundsRenderer();
-            boundsRenderer.stageBounds = frameOfRef.bounds;
             scene.addNode(boundsRenderer);
+            boundsRenderer.stageBounds = frameOfRef.bounds;
           } else {
             xrNonExclusiveFrameOfRef = frameOfRef;
           }
