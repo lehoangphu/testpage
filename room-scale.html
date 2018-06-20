@@ -55,8 +55,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
       // XR globals.
       let xrButton = null;
-      let xrExclusiveFrameOfRef = null;
-      let xrNonExclusiveFrameOfRef = null;
+      let xrExclusiveFrameOfRef_stage = null;
+      let xrExclusiveFrameOfRef_headModel = null;
 
       // WebGL scene globals.
       let gl = null;
@@ -134,15 +134,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         // that the scene still renders in approximately the right place.
         session.requestFrameOfReference('stage').then((frameOfRef) => {
           if (session.exclusive) {
-            xrExclusiveFrameOfRef = frameOfRef;
+            xrExclusiveFrameOfRef_stage = frameOfRef;
             let boundsRenderer = new BoundsRenderer();
             scene.addNode(boundsRenderer);
             boundsRenderer.stageBounds = frameOfRef.bounds;
-          } else {
-            xrNonExclusiveFrameOfRef = frameOfRef;
           }
 
           session.requestAnimationFrame(onXRFrame);
+        });
+
+        session.requestFrameOfReference('headModel').then((frameOfRef) => {
+          if (session.exclusive) {
+            xrExclusiveFrameOfRef_headModel = frameOfRef;
+          }
         });
       }
 
@@ -159,10 +163,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
       function onXRFrame(t, frame) {
         let session = frame.session;
-        let frameOfRef = session.exclusive ?
-                         xrExclusiveFrameOfRef :
-                         xrNonExclusiveFrameOfRef;
-        let pose = frame.getDevicePose(frameOfRef);
+        
+        let pose = frame.getDevicePose(xrExclusiveFrameOfRef_stage);
+        if (pose == null)
+        {
+          pose = frame.getDevicePose(xrExclusiveFrameOfRef_headModel);
+        }
 
         scene.startFrame();
 
