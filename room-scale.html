@@ -63,7 +63,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       let renderer = null;
       let scene = new Scene();
       scene.addNode(new Gltf2Node({url: 'media/gltf/camp/camp.gltf'}));
-      scene.addNode(new SkyboxNode({url: 'media/textures/eilenriede-park-2k.png'}));
+      //scene.addNode(new SkyboxNode({url: 'media/textures/eilenriede-park-2k.png'}));
       scene.standingStats(true);
 
       function initXR() {
@@ -136,8 +136,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           if (session.exclusive) {
             xrExclusiveFrameOfRef_stage = frameOfRef;
             let boundsRenderer = new BoundsRenderer();
-            scene.addNode(boundsRenderer);
-            boundsRenderer.stageBounds = frameOfRef.bounds;
+            //scene.addNode(boundsRenderer);
+            //boundsRenderer.stageBounds = frameOfRef.bounds;
           }
 
           session.requestAnimationFrame(onXRFrame);
@@ -163,6 +163,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
       function onXRFrame(t, frame) {
         let session = frame.session;
+
         
         let pose = frame.getDevicePose(xrExclusiveFrameOfRef_stage);
         if (pose == null)
