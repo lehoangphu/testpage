@@ -1,0 +1,294 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>BASIC WebVR request and exit present</title>
+    <script src="iframeHelper.js"></script>
+    <script id="vertex" type="x-shader">
+      attribute vec2 aVertexPosition;
+      void main() {
+        gl_Position = vec4(aVertexPosition, 0.0, 1.0);
+      }
+    </script> 
+    <script id="fragment" type="x-shader">
+      #ifdef GL_ES
+      precision highp float;
+      #endif
+      uniform vec4 uColor;
+      void main() {
+        gl_FragColor = uColor;
+      }
+    </script> 
+</head>
+<body onload="init()">
+    <div id="testdiv">
+        <canvas id="webglcanvas"></canvas>
+    </div>
+    <button onclick="requestPresent()">Request Present</button>
+    <button onclick="exitPresent()">Exit Present</button>
+    <button onclick="getVRDisplays()">Get VR Displays</button>
+    <br/>
+    <button onclick="exitPendingRequestPresent()">Exit pending + request present</button>
+    <button onclick="requestPendingExitPresent()">Request pending + exit present</button>
+    <br/>
+    <button onclick="doubleRequestPresent()">Double request present</button>
+    <button onclick="doubleExitPresent()">Double exit present</button>
+    <br/>
+    <button onclick="printGamepads()">GetGamepads</button>
+    <br/>
+    <button onclick="newPage()">New page</button>
+    <div>
+    <textarea id="output" rows="20" cols="70"></textarea>
+    </div>
+    <script>
+        var logTextArea = null;
+        var vrDisplay;
+        var canvas = null;
+        var gamepad0;
+
+        function newPage() {
+          
+        }
+
+        function printGamepads(){
+            var gps = navigator.getGamepads();
+            for ( var i=0; i<gps.length; ++i) {
+              output("GAMEPAD INDEX " + i);
+              if (!!gps[i]) {
+                output("-- Gamepad connected at index " + gps[i].index + " id: " + gps[i].id + " is connected: " + gps[i].connected);
+              }
+              else {
+                output("-- No gamepad at " + i);
+              }
+            }
+        }
+
+        // New requestPresent while one is already pending
+        function doubleRequestPresent(){
+            window.navigator.getVRDisplays().then(function (displays) {
+                output("getVRDisplays fulfilled with " + displays.length + " displays");
+                vrDisplay = displays[0];
+                var pendingPromise = vrDisplay.requestPresent();
+                vrDisplay.requestPresent().then(function(){
+                    output("New request present while requestPresent is pending succeeded");
+                }).catch(function(){
+                    output("New request present while requestPresent is pending failed");
+                })
+
+                pendingPromise.then(function(){
+                  output("Pending request present succeeded.");
+                }).catch(function(){
+                  output("Pending request present failed.");
+                })
+            })
+        }
+
+        // New exitPresent while one is already pending
+        function doubleExitPresent(){
+            var pendingPromise = vrDisplay.exitPresent();
+            vrDisplay.exitPresent().then(function(){
+                output("New exit present while exitPresent is pending succeeded");
+            }).catch(function(){
+                output("New exit present while exitPresent is pending failed");
+            })
+
+            pendingPromise.then(function(){
+              output("Pending exitPresent succeeded.");
+            }).catch(function(){
+              output("Pending exitPresent failed.");
+            })
+        }
+
+        // New exit present while request is pending
+        function requestPendingExitPresent(){
+            var pendingPromise = vrDisplay.requestPresent();
+            vrDisplay.exitPresent().then(function(){
+                output("New exit present while requestPresent is pending succeeded");
+            }).catch(function(){
+                output("New exit present while requestPresent is pending failed");
+            })
+
+            pendingPromise.then(function(){
+              output("Pending request present succeeded.");
+            }).catch(function(){
+              output("Pending request present failed.");
+            })
+        }
+
+        // New request present while exit is pending
+        function exitPendingRequestPresent(){
+            var pendingPromise = vrDisplay.exitPresent();
+            vrDisplay.requestPresent().then(function(){
+                output("New request present while exitPresent is pending succeeded");
+            }).catch(function(){
+                output("New request present while exitPresent is pending failed");
+            })
+
+            pendingPromise.then(function(){
+              output("Pending exit present succeeded.");
+            }).catch(function(){
+              output("Pending exit present failed.");
+            })
+        }
+
+        // getVRDisplays
+        function getVRDisplays()
+        {
+          output("GetVRDisplays");
+          window.navigator.getVRDisplays().then(function(displays){
+              output(displays[0]);
+          })
+        }
+
+        function onAnimationFrame() {
+          if (!!vrDisplay && vrDisplay.isPresenting) {
+            animationId = vrDisplay.requestAnimationFrame(onAnimationFrame);
+            vrDisplay.submitFrame();
+          }
+        }
+
+        // requestPresent
+        var animationId;
+        function requestPresent() {
+            output("Begin request present...");
+            window.navigator.getVRDisplays().then(function (displays) {
+                output("getVRDisplays fulfilled with " + displays.length + " displays");
+                vrDisplay = displays[0];
+                vrDisplay.requestPresent([{ source: canvas }]).then(() => {
+                    output("Request present succeeded.");
+                    animationId = vrDisplay.requestAnimationFrame(onAnimationFrame);
+                },
+                () => {
+                    output("Request present failed.");
+                })
+            });
+        }
+
+        // Exit present
+        function exitPresent(){
+            if (!!animationId) {
+              vrDisplay.cancelAnimationFrame(animationId);
+            }
+            vrDisplay.exitPresent().then(function(){
+                output("Exit present succeeded")
+            }).catch(function(){
+                output("Exit present failed")
+            })
+        }
+
+        // init
+        function init(){
+            setupOutputLog();
+            setupCanvas();
+
+            window.addEventListener("gamepadconnected", function (e) {
+                output("gamepad connected " + e.gamepad.id);
+                gamepad0 = e.gamepad;
+            });
+
+            window.addEventListener("gamepaddisconnected", function () {
+                output("gamepad disconnected");
+            });
+
+            window.addEventListener("vrdisplaypresentchange", function () {
+              output("vrdisplaypresentchange triggered. Is presenting? " + vrDisplay.isPresenting);
+              
+            });
+
+            window.addEventListener("vrdisplaydisconnect", function () {
+                if (!vrDisplay){
+                  output("vrDisplay is not defined or null, getVRDIsplays to initialize it.");
+                }
+                output("vrdisplayDisconnect triggered. isConnected? " + vrDisplay.isConnected);
+            });
+
+            window.addEventListener("vrdisplayconnect", function () {
+                if (!vrDisplay){
+                  output("vrDisplay is not defined or null, getVRDIsplays to initialize it.");
+                }
+                window.navigator.getVRDisplays().then(function (displays) {
+                  output("getVRDisplays fulfilled with " + displays.length + " displays");
+                  vrDisplay = displays[0];
+                  vrDisplay.requestAnimationFrame(onAnimationFrame);
+                  output("vrdisplayConnect triggered. isConnected? " + vrDisplay.isConnected);
+                });
+            });
+
+            window.addEventListener("vrdisplaypointerrestricted", function () {
+                output("vrdisplaypointerrestricted triggered.");
+            });
+
+           window.addEventListener("vrdisplaypointerunrestricted", function () {
+                output("vrdisplaypointerunrestricted triggered.");
+            });
+
+        }
+
+        function onAnimationFrame() {
+          vrDisplay.requestAnimationFrame(onAnimationFrame);
+        }
+
+        // Setup the textarea to output to
+        function setupOutputLog(){
+            logTextArea = document.getElementById("output");
+            logTextArea.value = "";
+        }
+
+        // Output to the text area
+        function output(s){
+            logTextArea.value += s + "\n";
+            logTextArea.scrollTop = logTextArea.scrollHeight;
+        }
+
+        // Setup the canvas
+        function setupCanvas(){
+          canvas = document.getElementById("webglcanvas");
+          var gl = canvas.getContext("experimental-webgl"); 
+          gl.viewport(0, 0, canvas.width, canvas.height);
+          gl.clearColor(0, 0.5, 0, 1);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          
+          var v = document.getElementById("vertex").firstChild.nodeValue;
+          var f = document.getElementById("fragment").firstChild.nodeValue;
+          
+          var vs = gl.createShader(gl.VERTEX_SHADER);
+          gl.shaderSource(vs, v);
+          gl.compileShader(vs);
+          
+          var fs = gl.createShader(gl.FRAGMENT_SHADER);
+          gl.shaderSource(fs, f);
+          gl.compileShader(fs);
+          
+          program = gl.createProgram();
+          gl.attachShader(program, vs);
+          gl.attachShader(program, fs);
+          gl.linkProgram(program);
+          
+          var aspect = canvas.width / canvas.height;
+
+          var vertices = new Float32Array([
+          -0.5, 0.5*aspect, 0.5, 0.5*aspect, 0.5,-0.5*aspect, // Triangle 1
+          -0.5, 0.5*aspect, 0.5,-0.5*aspect, -0.5,-0.5*aspect // Triangle 2
+          ]);
+          
+          vbuffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, vbuffer); 
+          gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+          
+          itemSize = 2;
+          numItems = vertices.length / itemSize;
+          
+          gl.useProgram(program);
+
+          program.uColor = gl.getUniformLocation(program, "uColor");
+          gl.uniform4fv(program.uColor, [0.0, 0.3, 0.0, 1.0]);
+          
+          program.aVertexPosition = gl.getAttribLocation(program, "aVertexPosition");
+          gl.enableVertexAttribArray(program.aVertexPosition);
+          gl.vertexAttribPointer(program.aVertexPosition, itemSize, gl.FLOAT, false, 0, 0);
+          gl.drawArrays(gl.TRIANGLES, 0, numItems);
+      }
+    </script>
+</body>
+</html>
